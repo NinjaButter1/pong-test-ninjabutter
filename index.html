@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Offline Pong</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+      font-family: monospace;
+    }
+    canvas {
+      border: 2px solid #fff;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="pong" width="800" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById('pong');
+    const ctx = canvas.getContext('2d');
+
+    const paddleWidth = 12, paddleHeight = 90, paddleSpeed = 6;
+    const p1 = { x: 20, y: canvas.height / 2 - paddleHeight / 2, score: 0, dy: 0 };
+    const p2 = { x: canvas.width - 32, y: canvas.height / 2 - paddleHeight / 2, score: 0, dy: 0 };
+    const ball = { x: canvas.width / 2, y: canvas.height / 2, radius: 8, dx: 5, dy: 5 };
+
+    // Controls: W/S for Left, ArrowUp/ArrowDown for Right
+    window.addEventListener('keydown', e => {
+      if (e.key === 'w' || e.key === 'W') p1.dy = -paddleSpeed;
+      if (e.key === 's' || e.key === 'S') p1.dy = paddleSpeed;
+      if (e.key === 'ArrowUp') p2.dy = -paddleSpeed;
+      if (e.key === 'ArrowDown') p2.dy = paddleSpeed;
+    });
+
+    window.addEventListener('keyup', e => {
+      if (['w', 'W', 's', 'S'].includes(e.key)) p1.dy = 0;
+      if (['ArrowUp', 'ArrowDown'].includes(e.key)) p2.dy = 0;
+    });
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.dx = -ball.dx;
+      ball.dy = (Math.random() > 0.5 ? 1 : -1) * 5;
+    }
+
+    function update() {
+      // Move paddles and keep inside canvas
+      p1.y = Math.max(0, Math.min(canvas.height - paddleHeight, p1.y + p1.dy));
+      p2.y = Math.max(0, Math.min(canvas.height - paddleHeight, p2.y + p2.dy));
+
+      // Move ball
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Top & bottom wall bounce
+      if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+        ball.dy = -ball.dy;
+      }
+
+      // Paddle collisions
+      if (ball.x - ball.radius < p1.x + paddleWidth && ball.y > p1.y && ball.y < p1.y + paddleHeight) {
+        ball.dx = Math.abs(ball.dx);
+      }
+      if (ball.x + ball.radius > p2.x && ball.y > p2.y && ball.y < p2.y + paddleHeight) {
+        ball.dx = -Math.abs(ball.dx);
+      }
+
+      // Scoring
+      if (ball.x < 0) { p2.score++; resetBall(); }
+      if (ball.x > canvas.width) { p1.score++; resetBall(); }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Center net
+      ctx.fillStyle = '#444';
+      for (let y = 0; y < canvas.height; y += 30) {
+        ctx.fillRect(canvas.width / 2 - 2, y, 4, 15);
+      }
+
+      // Paddles & Ball
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(p1.x, p1.y, paddleWidth, paddleHeight);
+      ctx.fillRect(p2.x, p2.y, paddleWidth, paddleHeight);
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Scores
+      ctx.font = '32px monospace';
+      ctx.fillText(p1.score, canvas.width / 4, 50);
+      ctx.fillText(p2.score, (canvas.width * 3) / 4, 50);
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
